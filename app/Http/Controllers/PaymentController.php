@@ -21,7 +21,7 @@ class PaymentController extends Controller
     {
         $per_page = $request->query('per_page');
 
-        $payments = Payment::where('user_id', auth()->id())->paginate($per_page);
+        $payments = Payment::with('user')->where('user_id', auth()->id())->paginate($per_page);
 
         return Inertia::render('Payments/Index', ['payments' => $payments]);
     }

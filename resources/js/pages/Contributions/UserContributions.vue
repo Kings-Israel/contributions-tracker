@@ -1,5 +1,12 @@
 <script setup lang="ts">
-defineProps({ contributions: Array })
+interface Contribution {
+  id: number;
+  month: string;
+  amount: number;
+  status: string;
+}
+
+defineProps({ contributions: Array as () => Contribution[] });
 </script>
 
 <template>
