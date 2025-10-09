@@ -4,15 +4,14 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { User, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 
-interface Payments {
+interface Penalty {
     id: number;
     user_id: number;
     user: User;
-    payment_type: string;
     amount: number;
     status: string;
     month: string;
-    reference_id: string;
+    reason: string;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const payments = defineProps({ payments: Array as () => Payments[] });
+const penalties = defineProps({ payments: Array as () => Penalty[] });
 </script>
 
 <template>
@@ -30,21 +29,19 @@ const payments = defineProps({ payments: Array as () => Payments[] });
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="p-6">
             <Table>
-                <TableCaption>A list of your recent payments.</TableCaption>
+                <TableCaption>A list of your penalties.</TableCaption>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[100px]">Payment Type</TableHead>
-                        <TableHead>Reference No.</TableHead>
-                        <TableHead className="text-right">Month</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Month</TableHead>
                         <TableHead className="text-right text-success">Amount</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody v-if="payments?.length">
-                    <TableRow v-for="payment in payments" :key="payment.id">
-                        <TableCell className="font-medium">{{ payment.payment_type }}</TableCell>
-                        <TableCell>{{ payment.reference_id }}</TableCell>
-                        <TableCell>{{ payment.month }}</TableCell>
-                        <TableCell className="text-right text-success">{{ new Intl.NumberFormat().format(payment.amount) }}</TableCell>
+                <TableBody v-if="penalties">
+                    <TableRow v-for="penalty in penalties" :key="penalty?.id">
+                        <TableCell>{{ penalty?.reason }}</TableCell>
+                        <TableCell>{{ penalty?.month }}</TableCell>
+                        <TableCell className="text-right text-success">{{ new Intl.NumberFormat().format(penalty.amount) }}</TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
