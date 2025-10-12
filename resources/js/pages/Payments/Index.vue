@@ -3,6 +3,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import AppLayout from '@/layouts/AppLayout.vue';
 import { User, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import Pagination from '@/Shared/Pagination.vue';
 
 interface Payments {
     id: number;
@@ -22,7 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const payments = defineProps({ payments: Array as () => Payments[] });
+const payments = defineProps({ payments: Object });
 </script>
 
 <template>
@@ -33,37 +34,22 @@ const payments = defineProps({ payments: Array as () => Payments[] });
                 <TableCaption>A list of your recent payments.</TableCaption>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-[100px]">Payment Type</TableHead>
+                        <TableHead>Payment Type</TableHead>
                         <TableHead>Reference No.</TableHead>
-                        <TableHead className="text-right">Month</TableHead>
-                        <TableHead className="text-right text-success">Amount</TableHead>
+                        <TableHead>Month</TableHead>
+                        <TableHead>Amount</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody v-if="payments?.length">
-                    <TableRow v-for="payment in payments" :key="payment.id">
-                        <TableCell className="font-medium">{{ payment.payment_type }}</TableCell>
+                <TableBody v-if="payments.payments?.data.length > 0">
+                    <TableRow v-for="payment in payments.payments?.data" :key="payment.id">
+                        <TableCell>{{ payment.payment_type }}</TableCell>
                         <TableCell>{{ payment.reference_id }}</TableCell>
                         <TableCell>{{ payment.month }}</TableCell>
-                        <TableCell className="text-right text-success">{{ new Intl.NumberFormat().format(payment.amount) }}</TableCell>
+                        <TableCell>{{ new Intl.NumberFormat().format(payment.amount) }}</TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
-            <!-- <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious href="#" />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#">1</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationEllipsis />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext href="#" />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination> -->
+            <pagination :links="payments.payments?.links" />
         </div>
     </AppLayout>
 </template>

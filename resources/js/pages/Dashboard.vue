@@ -27,7 +27,7 @@ defineProps({users: {type: Number}, total_contributions: {type: Number}, total_i
                             {{ users }}
                         </span>
                         <span class="mx-auto text-xl">
-                            Registered Members
+                            Users
                         </span>
                     </div>
                 </div>
@@ -35,10 +35,10 @@ defineProps({users: {type: Number}, total_contributions: {type: Number}, total_i
                     <div class="mx-auto my-auto flex flex-col">
                         <component :is="DollarSign" :size="50" class="mx-auto" />
                         <span class="mx-auto text-5xl">
-                            {{ total_contributions }}
+                            {{ new Intl.NumberFormat().format(total_contributions) }}
                         </span>
                         <span class="mx-auto text-xl">
-                            Total Contributions
+                            Total Payments
                         </span>
                     </div>
                 </div>
@@ -46,10 +46,10 @@ defineProps({users: {type: Number}, total_contributions: {type: Number}, total_i
                     <div class="mx-auto my-auto flex flex-col">
                         <component :is="Origami" :size="50" class="mx-auto" />
                         <span class="mx-auto text-5xl">
-                            {{ total_investments }}
+                            {{ new Intl.NumberFormat().format(total_investments) }}
                         </span>
                         <span class="mx-auto text-xl">
-                            Total Investments
+                            Total Expenses
                         </span>
                     </div>
                 </div>

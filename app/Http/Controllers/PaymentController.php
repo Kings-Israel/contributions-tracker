@@ -19,9 +19,9 @@ class PaymentController extends Controller
 {
     public function index(Request $request)
     {
-        $per_page = $request->query('per_page');
+        $per_page = $request->query('per_page') ?? 50;
 
-        $payments = Payment::with('user')->where('user_id', auth()->id())->paginate($per_page);
+        $payments = Payment::paginate($per_page);
 
         return Inertia::render('Payments/Index', ['payments' => $payments]);
     }
@@ -29,8 +29,7 @@ class PaymentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|uuid|exists:users,id',
-            'payment_type' => 'required|in:contribution,penalty',
+            'payment_type' => 'required|string|max:255',
             'reference_id' => 'required|uuid',
             'amount' => 'required|numeric|min:0',
             'month' => 'required|date'
@@ -38,11 +37,5 @@ class PaymentController extends Controller
 
         $payment = Payment::create($validated);
         return Inertia::render('Payments/Show', ['payment' => $payment]);
-    }
-
-    public function userPayments($id)
-    {
-        $payments = Payment::where('user_id', $id)->get();
-        return Inertia::render('Payments/UserPayments', ['payments' => $payments]);
     }
 }

@@ -1,7 +1,14 @@
 <?php
 
+use App\Http\Controllers\AdminLogController;
+use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PenaltyController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -12,6 +19,14 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('payments', [PaymentController::class, 'index'])->name('payments');
+    Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses');
+    Route::post('expenses/store', [ExpenseController::class, 'store'])->name('expenses.store');
+    Route::post('expenses/update', [ExpenseController::class, 'update'])->name('expenses.update');
+    Route::post('expenses/status/update', [ExpenseController::class, 'updateStatus'])->name('expenses.status.update');
+
+    // Excel
+    Route::get('expenses/template/download', [ExpenseController::class, 'downloadTemplate'])->name('expenses.template.download');
+    Route::post('expenses/upload', [ExpenseController::class, 'upload'])->name('expenses.upload');
 });
 
 Route::prefix('users')->middleware('auth')->group(function () {

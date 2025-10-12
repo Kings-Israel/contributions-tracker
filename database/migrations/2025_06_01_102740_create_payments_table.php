@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('payment_type', ['contribution', 'penalty']);
-            $table->uuid('reference_id'); // Can be linked manually in logic
+            // $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('payment_type');
+            $table->longText('reference_id'); // Can be linked manually in logic
             $table->decimal('amount', 10, 2);
             $table->date('month');
             $table->timestamps();
