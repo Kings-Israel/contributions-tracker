@@ -27,6 +27,14 @@ Route::middleware('auth')->group(function () {
     // Excel
     Route::get('expenses/template/download', [ExpenseController::class, 'downloadTemplate'])->name('expenses.template.download');
     Route::post('expenses/upload', [ExpenseController::class, 'upload'])->name('expenses.upload');
+
+    // Investments
+    Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
+
+    // Logs
+    Route::get('/logs', function () {
+        return inertia()->render('Logs/Index');
+    });
 });
 
 Route::prefix('users')->middleware('auth')->group(function () {

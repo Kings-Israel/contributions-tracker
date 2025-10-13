@@ -17,6 +17,11 @@ use Illuminate\Validation\ValidationException;
 
 class InvestmentController extends Controller
 {
+    public function index()
+    {
+        return Inertia::render('Investments/Index');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/AppLayout.vue';
+import Pagination from '@/Shared/Pagination.vue';
 import { User, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import Pagination from '@/Shared/Pagination.vue';
+import moment from 'moment';
 
 interface Payments {
     id: number;
@@ -36,7 +37,9 @@ const payments = defineProps({ payments: Object });
                     <TableRow>
                         <TableHead>Payment Type</TableHead>
                         <TableHead>Reference No.</TableHead>
-                        <TableHead>Month</TableHead>
+                        <TableHead>User Name</TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead>Amount</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -44,7 +47,9 @@ const payments = defineProps({ payments: Object });
                     <TableRow v-for="payment in payments.payments?.data" :key="payment.id">
                         <TableCell>{{ payment.payment_type }}</TableCell>
                         <TableCell>{{ payment.reference_id }}</TableCell>
-                        <TableCell>{{ payment.month }}</TableCell>
+                        <TableCell>{{ payment.name }}</TableCell>
+                        <TableCell>{{ payment.phone_number }}</TableCell>
+                        <TableCell>{{ moment(payment.created_at).format('Do MMM YYYY') }}</TableCell>
                         <TableCell>{{ new Intl.NumberFormat().format(payment.amount) }}</TableCell>
                     </TableRow>
                 </TableBody>

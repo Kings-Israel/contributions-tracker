@@ -21,7 +21,7 @@ class PaymentController extends Controller
     {
         $per_page = $request->query('per_page') ?? 50;
 
-        $payments = Payment::paginate($per_page);
+        $payments = Payment::latest()->paginate($per_page);
 
         return Inertia::render('Payments/Index', ['payments' => $payments]);
     }

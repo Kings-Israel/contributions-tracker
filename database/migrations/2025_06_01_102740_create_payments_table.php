@@ -15,9 +15,10 @@ return new class extends Migration
             $table->id();
             // $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('payment_type');
-            $table->longText('reference_id'); // Can be linked manually in logic
+            $table->longText('reference_id');
             $table->decimal('amount', 10, 2);
-            $table->date('month');
+            $table->string('name')->nullable();
+            $table->string('phone_number')->nullable();
             $table->timestamps();
         });
     }
