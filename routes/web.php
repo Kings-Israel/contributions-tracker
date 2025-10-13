@@ -31,6 +31,16 @@ Route::middleware('auth')->group(function () {
     // Investments
     Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
 
+    // Events Management
+    Route::get('/events', function () {
+        return inertia()->render('Events/Index');
+    })->name('events');
+
+    // Members Management
+    Route::get('/memebers', function () {
+        return inertia()->render('Members/Index');
+    })->name('members');
+
     // Logs
     Route::get('/logs', function () {
         return inertia()->render('Logs/Index');

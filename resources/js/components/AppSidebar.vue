@@ -4,7 +4,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Calculator, DollarSign, Folder, LayoutGrid, Logs } from 'lucide-vue-next';
+import { BookOpen, Calculator, DollarSign, Folder, LayoutGrid, Logs, Tent, User2 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +22,16 @@ const mainNavItems: NavItem[] = [
         title: 'Expense Management',
         href: '/expenses',
         icon: Calculator,
+    },
+    {
+        title: 'Events Management',
+        href: '/events',
+        icon: Tent,
+    },
+    {
+        title: 'Members Management',
+        href: '/memebers',
+        icon: User2,
     },
     {
         title: 'Investments',
