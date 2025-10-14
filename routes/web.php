@@ -5,6 +5,7 @@ use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvestmentController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PenaltyController;
 use App\Http\Controllers\UserController;
@@ -39,7 +40,8 @@ Route::middleware('auth')->group(function () {
     // Members Management
     Route::get('/memebers', function () {
         return inertia()->render('Members/Index');
-    })->name('members');
+    })->name('members.index');
+    Route::post('/members/store', [MemberController::class, 'store'])->name('members.store');
 
     // Logs
     Route::get('/logs', function () {

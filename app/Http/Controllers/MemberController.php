@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Member;
+use Illuminate\Http\Request;
+
+class MemberController extends Controller
+{
+    /**
+     * Get members
+     *
+     * @param Type $var Description
+     * @return type
+     * @throws conditon
+     **/
+    public function index(Request $request)
+    {
+        $per_page = $request->query('per_page') ?? 50;
+
+        $members = Member::paginate($per_page);
+
+        return inertia()->render('Members/Index', [
+            'members' => $members
+        ]);
+    }
+
+    /**
+     * Create a Member
+     *
+     * Add a new church member
+     *
+     * @param Type $var Description
+     * @return type
+     * @throws conditon
+     **/
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required'],
+            'email' => ['nullable', 'string', 'max:255'],
+            'phone_number' => ['nullable', 'string'],
+            'age' => ['required', 'integer'],
+            'gender' => ['required', 'in:male,female']
+        ]);
+
+        Member::create($validated);
+
+        return redirect()->route('members.index');
+    }
+}

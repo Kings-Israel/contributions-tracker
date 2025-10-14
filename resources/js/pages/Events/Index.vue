@@ -5,14 +5,14 @@ import { Head } from '@inertiajs/vue3';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Investments',
-        href: '/investments',
+        title: 'Events Management',
+        href: '/events',
     },
 ];
 </script>
 
 <template>
-    <Head title="Investments" />
+    <Head title="Events Management" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="p-6">
             <h2 class="text-center">Events Management Coming Soon</h2>

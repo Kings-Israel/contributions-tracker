@@ -1,21 +1,46 @@
 <script setup lang="ts">
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import Families from './Families.vue';
+import Groups from './Groups.vue';
+import Members from './Members.vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Investments',
-        href: '/investments',
+        title: 'Membership Management',
+        href: '/members',
     },
 ];
 </script>
 
 <template>
-    <Head title="Investments" />
+    <Head title="Membership Management" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="p-6">
-            <h2 class="text-center">Member Management Coming Soon</h2>
+        <div class="p-4">
+            <Tabs default-value="members">
+                <TabsList>
+                    <TabsTrigger value="members"> Members Management </TabsTrigger>
+                    <TabsTrigger value="groups"> Groups Management </TabsTrigger>
+                    <TabsTrigger value="families"> Families Management </TabsTrigger>
+                </TabsList>
+                <TabsContent value="members">
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
+                        <Members />
+                    </div>
+                </TabsContent>
+                <TabsContent value="groups">
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
+                        <Groups />
+                    </div>
+                </TabsContent>
+                <TabsContent value="families">
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
+                        <Families />
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     </AppLayout>
 </template>
