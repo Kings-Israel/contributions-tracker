@@ -44,6 +44,8 @@ class MemberController extends Controller
             'gender' => ['required', 'in:male,female']
         ]);
 
+        info($validated);
+
         Member::create($validated);
 
         return redirect()->route('members.index');

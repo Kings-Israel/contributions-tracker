@@ -31,8 +31,7 @@ const form = useForm({
 });
 
 const addUser = () => {
-    console.log('user added');
-    form.post('/expenses/store');
+    form.post('/members/store');
 };
 
 const closeSheetBtn = ref();
@@ -115,6 +114,16 @@ const closeSheetBtn = ref();
                                     <FormLabel>Age</FormLabel>
                                     <FormControl>
                                         <Input type="number" v-model="form.age" placeholder="Enter age" v-bind="componentField" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            </FormField>
+
+                            <FormField v-slot="{ componentField }" name="gender">
+                                <FormItem>
+                                    <FormLabel>Gender</FormLabel>
+                                    <FormControl>
+                                        <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
