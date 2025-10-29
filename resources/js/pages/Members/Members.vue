@@ -1,23 +1,35 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import DialogClose from '@/components/ui/dialog/DialogClose.vue';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Table, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import Pagination from '@/Shared/Pagination.vue';
 import { useForm } from '@inertiajs/vue3';
 import { toTypedSchema } from '@vee-validate/zod';
 import { LoaderCircle } from 'lucide-vue-next';
 import { ref } from 'vue';
 import * as z from 'zod';
+import moment from 'moment';
 
 const formSchema = toTypedSchema(
     z.object({
         name: z.string().min(2).max(100),
         email: z.string().min(1),
         phone_number: z.string().min(1),
-        age: z.string().optional(),
+        age: z.number().optional(),
         gender: z.string().optional(),
     }),
 );
@@ -33,6 +45,8 @@ const form = useForm({
 const addUser = () => {
     form.post('/members/store');
 };
+
+const { members } = defineProps({ members: Object });
 
 const closeSheetBtn = ref();
 </script>
@@ -63,7 +77,7 @@ const closeSheetBtn = ref();
                     </form> -->
                 </DialogContent>
             </Dialog>
-            <Form action="/members/store" as="">
+            <Form action="/members/store" as="" :validation-schema="formSchema">
                 <Sheet>
                     <SheetTrigger as-child>
                         <Button variant="outline"> Add Member </Button>
@@ -123,7 +137,23 @@ const closeSheetBtn = ref();
                                 <FormItem>
                                     <FormLabel>Gender</FormLabel>
                                     <FormControl>
-                                        <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" />
+                                        <!-- <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" /> -->
+                                        <Select v-bind="componentField" v-model="form.gender">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a Gender" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectLabel>Genders</SelectLabel>
+                                                    <SelectItem value="male">
+                                                        Male
+                                                    </SelectItem>
+                                                    <SelectItem value="female">
+                                                        Female
+                                                    </SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -161,7 +191,30 @@ const closeSheetBtn = ref();
                     <TableHead>Actions</TableHead>
                 </TableRow>
             </TableHeader>
+            <TableBody v-if="members?.data.length > 0">
+                <TableRow v-for="member in members.data" :key="member.id">
+                    <TableCell>{{ member?.name }}</TableCell>
+                    <TableCell>{{ member?.email }}</TableCell>
+                    <TableCell>{{ member?.phone_number }}</TableCell>
+                    <TableCell>{{ member?.age }}</TableCell>
+                    <TableCell>{{ member?.gender }}</TableCell>
+                    <TableCell>{{ moment(member?.created_at).format('DD MMM YYYY') }}</TableCell>
+                    <TableCell>
+                        <Dialog>
+                            <DialogTrigger as-child>
+                                <Button variant="ghost" size="sm">View</Button>
+                            </DialogTrigger>
+                            <DialogContent class="sm:max-w-[500px]">
+                                <DialogHeader>
+                                    <DialogTitle>Memer Details</DialogTitle>
+                                </DialogHeader>
+
+                            </DialogContent>
+                        </Dialog>
+                    </TableCell>
+                </TableRow>
+            </TableBody>
         </Table>
-        <!-- <pagination :links="expenses.expenses.links" /> -->
+        <pagination :links="members?.links" />
     </div>
 </template>

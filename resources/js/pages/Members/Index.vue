@@ -13,6 +13,10 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/members',
     },
 ];
+
+const data = defineProps({ members: Object, groups: Object });
+console.log(data)
+
 </script>
 
 <template>
@@ -27,12 +31,12 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </TabsList>
                 <TabsContent value="members">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
-                        <Members />
+                        <Members :members="data?.members" />
                     </div>
                 </TabsContent>
                 <TabsContent value="groups">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
-                        <Groups />
+                        <Groups :groups="data?.groups" />
                     </div>
                 </TabsContent>
                 <TabsContent value="families">

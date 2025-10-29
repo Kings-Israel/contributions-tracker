@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MemberController extends Controller
 {
@@ -20,8 +22,11 @@ class MemberController extends Controller
 
         $members = Member::paginate($per_page);
 
-        return inertia()->render('Members/Index', [
-            'members' => $members
+        $groups = Group::withCount('members')->paginate($per_page);
+
+        return Inertia::render('Members/Index', [
+            'members' => $members,
+            'groups' => $groups
         ]);
     }
 
@@ -43,8 +48,6 @@ class MemberController extends Controller
             'age' => ['required', 'integer'],
             'gender' => ['required', 'in:male,female']
         ]);
-
-        info($validated);
 
         Member::create($validated);
 

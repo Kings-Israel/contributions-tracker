@@ -4,13 +4,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Table, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TagsInput, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText } from '@/components/ui/tags-input';
 import { useForm } from '@inertiajs/vue3';
 import { toTypedSchema } from '@vee-validate/zod';
 import { LoaderCircle } from 'lucide-vue-next';
+import Pagination from '@/Shared/Pagination.vue';
 import { ref } from 'vue';
 import * as z from 'zod';
+import moment from 'moment';
 
 const formSchema = toTypedSchema(
     z.object({
@@ -24,19 +26,20 @@ const form = useForm({
     tags: ['Youth'],
 });
 
-const addUser = () => {
-    console.log('user added');
-    form.post('/expenses/store');
+const storeGroup = () => {
+    form.post('/groups/store');
 };
 
 const closeSheetBtn = ref();
+
+const { groups } = defineProps({ groups: Object })
 </script>
 
 <template>
     <div class="mx-1 lg:flex lg:justify-between">
         <div class="hidden md:block"></div>
         <div class="mt-1 flex gap-1">
-            <Form action="/members/store" as="">
+            <Form action="/groups/store" as="" :validation-schema="formSchema">
                 <Sheet>
                     <SheetTrigger as-child>
                         <Button variant="outline"> Add Group </Button>
@@ -46,7 +49,7 @@ const closeSheetBtn = ref();
                             <SheetTitle>Add Group</SheetTitle>
                             <SheetDescription> Enter the details of the new group below. </SheetDescription>
                         </SheetHeader>
-                        <form id="dialogForm" @submit.prevent="addUser" class="mt-4 space-y-4">
+                        <form id="dialogForm" @submit.prevent="storeGroup" class="mt-4 space-y-4">
                             <FormField v-slot="{ componentField }" name="name">
                                 <FormItem>
                                     <FormLabel>Group Name</FormLabel>
@@ -105,7 +108,27 @@ const closeSheetBtn = ref();
                     <TableHead>Actions</TableHead>
                 </TableRow>
             </TableHeader>
+            <TableBody v-if="groups?.data.length > 0">
+                <TableRow v-for="group in groups?.data" :key="group.id">
+                    <TableCell>{{ group?.name }}</TableCell>
+                    <TableCell>
+                        <div class="flex gap-1">
+                            <span v-for="(tag, key) in group?.tags" :key="key">
+                                <span v-if="key === group?.tags.length - 1">
+                                    {{ tag }}
+                                </span>
+                                <span v-else>
+                                    {{ tag }},
+                                </span>
+                            </span>
+                        </div>
+                    </TableCell>
+                    <TableCell>{{ group?.members_count }}</TableCell>
+                    <TableCell>{{ moment(group.created_at).format('DD MMM YYYY') }}</TableCell>
+                    <TableCell>View</TableCell>
+                </TableRow>
+            </TableBody>
         </Table>
-        <!-- <pagination :links="expenses.expenses.links" /> -->
+        <pagination :links="groups?.links" />
     </div>
 </template>
