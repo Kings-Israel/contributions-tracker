@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminLogController;
 use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PaymentController;
@@ -38,8 +39,19 @@ Route::middleware('auth')->group(function () {
     })->name('events');
 
     // Members Management
+<<<<<<< HEAD
     Route::get('/memebers', [MemberController::class, 'index'])->name('members.index');
+=======
+    Route::get('/members', [MemberController::class, 'index'])->name('members.index');
+>>>>>>> 52cf3deb62b616a4a91aea922bfb0478baa90b84
     Route::post('/members/store', [MemberController::class, 'store'])->name('members.store');
+
+    // Groups Management
+    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    Route::post('/groups/store', [GroupController::class, 'store'])->name('groups.store');
+
+    // Group Member Management
+    Route::post('/member/group/add', [GroupController::class, 'addMemberToGroup'])->name('member.group.add');
 
     // Logs
     Route::get('/logs', function () {

@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Pagination from '@/Shared/Pagination.vue';
 import { useForm } from '@inertiajs/vue3';
 import { toTypedSchema } from '@vee-validate/zod';
 import { LoaderCircle } from 'lucide-vue-next';
+import moment from 'moment';
 import { ref } from 'vue';
 import * as z from 'zod';
 
@@ -33,6 +36,8 @@ const form = useForm({
 const addUser = () => {
     form.post('/members/store');
 };
+
+const { members } = defineProps({ members: Object });
 
 const closeSheetBtn = ref();
 
@@ -127,9 +132,10 @@ console.log(members);
                                 <FormItem>
                                     <FormLabel>Gender</FormLabel>
                                     <FormControl>
+                                        <!-- <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" /> -->
                                         <Select v-bind="componentField" v-model="form.gender">
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select Gender" />
+                                                <SelectValue placeholder="Select a Gender" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectGroup>
@@ -163,7 +169,7 @@ console.log(members);
         </div>
     </div>
     <div class="py-2">
-        <!-- <Table>
+        <Table>
             <TableCaption>A list of members.</TableCaption>
             <TableHeader>
                 <TableRow>
@@ -176,18 +182,29 @@ console.log(members);
                     <TableHead>Actions</TableHead>
                 </TableRow>
             </TableHeader>
-            <TableBody v-if="members?.members.data.length > 0">
-                <TableRow v-for="member in members.members.data" :key="member.id">
+            <TableBody v-if="members?.data.length > 0">
+                <TableRow v-for="member in members.data" :key="member.id">
                     <TableCell>{{ member?.name }}</TableCell>
                     <TableCell>{{ member?.email }}</TableCell>
                     <TableCell>{{ member?.phone_number }}</TableCell>
                     <TableCell>{{ member?.age }}</TableCell>
                     <TableCell>{{ member?.gender }}</TableCell>
                     <TableCell>{{ moment(member?.created_at).format('DD MMM YYYY') }}</TableCell>
-                    <TableCell></TableCell>
+                    <TableCell>
+                        <Dialog>
+                            <DialogTrigger as-child>
+                                <Button variant="ghost" size="sm">View</Button>
+                            </DialogTrigger>
+                            <DialogContent class="sm:max-w-[500px]">
+                                <DialogHeader>
+                                    <DialogTitle>Memer Details</DialogTitle>
+                                </DialogHeader>
+                            </DialogContent>
+                        </Dialog>
+                    </TableCell>
                 </TableRow>
             </TableBody>
-        </Table> -->
-        <!-- <pagination :links="expenses.expenses.links" /> -->
+        </Table>
+        <pagination :links="members?.links" />
     </div>
 </template>

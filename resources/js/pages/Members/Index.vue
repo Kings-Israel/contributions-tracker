@@ -14,11 +14,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const tabs = [
-    { key: 'membership_management', label: 'Membership Management', component: 'Members' },
-    { key: 'groups_management', label: 'Groups Management', component: 'Groups' },
-    { key: 'families_management', label: 'Families Management', component: 'Families' },
-];
+const data = defineProps({ members: Object, groups: Object });
+console.log(data);
 </script>
 
 <template>
@@ -29,9 +26,9 @@ const tabs = [
                 <TabsList>
                     <TabsTrigger v-for="tab in tabs" :key="tab.key" :value="tab.key"> {{ tab.label }} </TabsTrigger>
                 </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.key" :value="tab.key">
-                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Members'">
-                        <Members />
+                <TabsContent value="members">
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
+                        <Members :members="data?.members" />
                     </div>
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Groups'">
                         <Groups />
@@ -42,7 +39,7 @@ const tabs = [
                 </TabsContent>
                 <!-- <TabsContent value="groups">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
-                        <Groups />
+                        <Groups :groups="data?.groups" />
                     </div>
                 </TabsContent>
                 <TabsContent value="families">
