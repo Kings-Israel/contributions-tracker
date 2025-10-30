@@ -13,24 +13,34 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/members',
     },
 ];
+
+const tabs = [
+    { key: 'membership_management', label: 'Membership Management', component: 'Members' },
+    { key: 'groups_management', label: 'Groups Management', component: 'Groups' },
+    { key: 'families_management', label: 'Families Management', component: 'Families' },
+];
 </script>
 
 <template>
     <Head title="Membership Management" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="p-4">
-            <Tabs default-value="members">
+            <Tabs default-value="membership_management">
                 <TabsList>
-                    <TabsTrigger value="members"> Members Management </TabsTrigger>
-                    <TabsTrigger value="groups"> Groups Management </TabsTrigger>
-                    <TabsTrigger value="families"> Families Management </TabsTrigger>
+                    <TabsTrigger v-for="tab in tabs" :key="tab.key" :value="tab.key"> {{ tab.label }} </TabsTrigger>
                 </TabsList>
-                <TabsContent value="members">
-                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
+                <TabsContent v-for="tab in tabs" :key="tab.key" :value="tab.key">
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Members'">
                         <Members />
                     </div>
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Groups'">
+                        <Groups />
+                    </div>
+                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Families'">
+                        <Families />
+                    </div>
                 </TabsContent>
-                <TabsContent value="groups">
+                <!-- <TabsContent value="groups">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
                         <Groups />
                     </div>
@@ -39,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
                         <Families />
                     </div>
-                </TabsContent>
+                </TabsContent> -->
             </Tabs>
         </div>
     </AppLayout>

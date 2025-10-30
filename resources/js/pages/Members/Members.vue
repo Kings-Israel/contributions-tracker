@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Table, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useForm } from '@inertiajs/vue3';
 import { toTypedSchema } from '@vee-validate/zod';
 import { LoaderCircle } from 'lucide-vue-next';
@@ -17,7 +17,7 @@ const formSchema = toTypedSchema(
         name: z.string().min(2).max(100),
         email: z.string().min(1),
         phone_number: z.string().min(1),
-        age: z.string().optional(),
+        age: z.number().optional(),
         gender: z.string().optional(),
     }),
 );
@@ -35,6 +35,10 @@ const addUser = () => {
 };
 
 const closeSheetBtn = ref();
+
+const members = defineProps({ members: Object });
+
+console.log(members);
 </script>
 
 <template>
@@ -63,7 +67,7 @@ const closeSheetBtn = ref();
                     </form> -->
                 </DialogContent>
             </Dialog>
-            <Form action="/members/store" as="">
+            <Form action="/members/store" as="" :validation-schema="formSchema">
                 <Sheet>
                     <SheetTrigger as-child>
                         <Button variant="outline"> Add Member </Button>
@@ -123,7 +127,18 @@ const closeSheetBtn = ref();
                                 <FormItem>
                                     <FormLabel>Gender</FormLabel>
                                     <FormControl>
-                                        <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" />
+                                        <Select v-bind="componentField" v-model="form.gender">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Gender" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectLabel>Genders</SelectLabel>
+                                                    <SelectItem value="male"> Male </SelectItem>
+                                                    <SelectItem value="female"> Female </SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -148,7 +163,7 @@ const closeSheetBtn = ref();
         </div>
     </div>
     <div class="py-2">
-        <Table>
+        <!-- <Table>
             <TableCaption>A list of members.</TableCaption>
             <TableHeader>
                 <TableRow>
@@ -161,7 +176,18 @@ const closeSheetBtn = ref();
                     <TableHead>Actions</TableHead>
                 </TableRow>
             </TableHeader>
-        </Table>
+            <TableBody v-if="members?.members.data.length > 0">
+                <TableRow v-for="member in members.members.data" :key="member.id">
+                    <TableCell>{{ member?.name }}</TableCell>
+                    <TableCell>{{ member?.email }}</TableCell>
+                    <TableCell>{{ member?.phone_number }}</TableCell>
+                    <TableCell>{{ member?.age }}</TableCell>
+                    <TableCell>{{ member?.gender }}</TableCell>
+                    <TableCell>{{ moment(member?.created_at).format('DD MMM YYYY') }}</TableCell>
+                    <TableCell></TableCell>
+                </TableRow>
+            </TableBody>
+        </Table> -->
         <!-- <pagination :links="expenses.expenses.links" /> -->
     </div>
 </template>

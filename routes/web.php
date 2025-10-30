@@ -38,9 +38,7 @@ Route::middleware('auth')->group(function () {
     })->name('events');
 
     // Members Management
-    Route::get('/memebers', function () {
-        return inertia()->render('Members/Index');
-    })->name('members.index');
+    Route::get('/memebers', [MemberController::class, 'index'])->name('members.index');
     Route::post('/members/store', [MemberController::class, 'store'])->name('members.store');
 
     // Logs

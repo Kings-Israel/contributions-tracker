@@ -4,25 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MemberController extends Controller
 {
     /**
      * Get members
      *
-     * @param Type $var Description
-     * @return type
-     * @throws conditon
      **/
     public function index(Request $request)
     {
         $per_page = $request->query('per_page') ?? 50;
 
-        $members = Member::paginate($per_page);
+        $members = Member::latest()->paginate($per_page);
 
-        return inertia()->render('Members/Index', [
-            'members' => $members
-        ]);
+        return Inertia::render('Members/Index', ['members' => $members]);
     }
 
     /**
@@ -30,9 +26,6 @@ class MemberController extends Controller
      *
      * Add a new church member
      *
-     * @param Type $var Description
-     * @return type
-     * @throws conditon
      **/
     public function store(Request $request)
     {
@@ -43,8 +36,6 @@ class MemberController extends Controller
             'age' => ['required', 'integer'],
             'gender' => ['required', 'in:male,female']
         ]);
-
-        info($validated);
 
         Member::create($validated);
 
