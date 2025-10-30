@@ -21,9 +21,12 @@ class MemberController extends Controller
 
         $groups = Group::withCount('members')->paginate($per_page);
 
+        $all_groups = Group::all();
+
         return Inertia::render('Members/Index', [
             'members' => $members,
-            'groups' => $groups
+            'groups' => $groups,
+            'all_groups' => $all_groups,
         ]);
     }
 

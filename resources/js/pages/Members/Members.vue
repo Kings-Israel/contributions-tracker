@@ -27,6 +27,12 @@ const formSchema = toTypedSchema(
     }),
 );
 
+const addToGroupSchema = toTypedSchema(
+    z.object({
+        group_id: z.number(),
+    }),
+);
+
 const form = useForm({
     name: '',
     email: '',
@@ -35,13 +41,24 @@ const form = useForm({
     gender: '',
 });
 
+const addToGroupForm = useForm({
+    member_id: 0,
+    group_id: 0,
+});
+
 const addUser = () => {
-    form.post('/members/store');
+    addToGroupForm.post('/members/store');
 };
 
-const { members } = defineProps({ members: Object });
+const { members, groups } = defineProps({ members: Object, groups: Object });
 
 const closeSheetBtn = ref();
+
+const addToGroup = (memberId: number) => {
+    addToGroupForm.member_id = memberId;
+
+    addToGroupForm.post('/member/group/add');
+};
 </script>
 
 <template>
@@ -130,7 +147,6 @@ const closeSheetBtn = ref();
                                 <FormItem>
                                     <FormLabel>Gender</FormLabel>
                                     <FormControl>
-                                        <!-- <Input type="text" v-model="form.gender" placeholder="Enter gender" v-bind="componentField" /> -->
                                         <Select v-bind="componentField" v-model="form.gender">
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select a Gender" />
@@ -227,8 +243,66 @@ const closeSheetBtn = ref();
                                         {{ toTitleCase(member?.gender) }}
                                     </span>
                                 </div>
+                                <div v-if="member.groups.length > 0">
+                                    <Label>Groups</Label>
+                                    <span v-for="(group, key) in member.groups" :key="group.id">
+                                        <span v-if="key === member.groups.length - 1">
+                                            {{ group.name }}
+                                        </span>
+                                        <span v-else> {{ group.name }}, </span>
+                                    </span>
+                                </div>
                             </DialogContent>
                         </Dialog>
+                        <Form action="/members/group/add" as="" :validation-schema="addToGroupSchema">
+                            <Sheet>
+                                <SheetTrigger as-child>
+                                    <Button variant="outline" @click="addToGroupForm.member_id = member.id"> Add to Group </Button>
+                                </SheetTrigger>
+                                <SheetContent class="space-y-2">
+                                    <SheetHeader>
+                                        <SheetTitle>Add {{ member?.name }} to group</SheetTitle>
+                                        <SheetDescription> Select the group to add the member to. </SheetDescription>
+                                    </SheetHeader>
+                                    <form id="dialogForm" @submit.prevent="addToGroup(member?.id)" class="mt-4 space-y-4">
+                                        <FormField v-slot="{ componentField }" name="group_id">
+                                            <FormItem>
+                                                <FormLabel>Select Group</FormLabel>
+                                                <FormControl>
+                                                    <Select v-bind="componentField" v-model="addToGroupForm.group_id">
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a Group" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectLabel>Groups</SelectLabel>
+                                                                <SelectItem v-for="group in groups" :key="group.id" :value="group.id">
+                                                                    {{ group.name }}
+                                                                </SelectItem>
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        </FormField>
+                                    </form>
+                                    <SheetFooter>
+                                        <SheetClose as-child ref="closeSheetBtn"> </SheetClose>
+                                        <div class="flex flex-col">
+                                            <Button type="submit" form="dialogForm" :disabled="addToGroupForm.processing">
+                                                <LoaderCircle v-if="addToGroupForm.processing" class="h-4 w-4 animate-spin" />
+                                                Add Member to Group
+                                            </Button>
+                                            <Progress v-if="addToGroupForm.progress" :model-value="addToGroupForm.progress.percentage" />
+                                            <div v-if="addToGroupForm.wasSuccessful" class="ml-4 flex items-center">
+                                                <p class="text-sm text-green-600">Member added to group successfully!</p>
+                                            </div>
+                                        </div>
+                                    </SheetFooter>
+                                </SheetContent>
+                            </Sheet>
+                        </Form>
                     </TableCell>
                 </TableRow>
             </TableBody>

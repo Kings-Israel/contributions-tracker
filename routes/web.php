@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     Route::post('/groups/store', [GroupController::class, 'store'])->name('groups.store');
 
+    Route::get('/groups/all', [GroupController::class, 'all'])->name('groups.all');
+
     // Group Member Management
     Route::post('/member/group/add', [GroupController::class, 'addMemberToGroup'])->name('member.group.add');
 

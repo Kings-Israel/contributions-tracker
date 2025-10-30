@@ -19,6 +19,16 @@ class GroupController extends Controller
     }
 
     /**
+     * All Groups
+     *
+     * Undocumented function long description
+     **/
+    public function all()
+    {
+        return response()->json(Group::all());
+    }
+
+    /**
      * Add Group
      *
      **/
@@ -43,7 +53,7 @@ class GroupController extends Controller
             'group_id' => ['required']
         ]);
 
-        GroupMember::create($validated);
+        GroupMember::firstOrCreate($validated);
 
         return redirect()->route('members.index');
     }
