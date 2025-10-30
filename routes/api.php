@@ -13,3 +13,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::post('/payment/confirmation', function (Request $request) {
+    info($request->all());
+});
+
+Route::get('/payment/validation', function (Request $request) {
+    info($request->all());
+});

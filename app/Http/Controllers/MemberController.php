@@ -15,9 +15,9 @@ class MemberController extends Controller
      **/
     public function index(Request $request)
     {
-        $per_page = $request->query('per_page') ?? 50;
+        $per_page = $request->query('per_page') ?? 10;
 
-        $members = Member::latest()->paginate($per_page);
+        $members = Member::with('groups')->latest()->paginate($per_page);
 
         $groups = Group::withCount('members')->paginate($per_page);
 

@@ -15,29 +15,24 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const data = defineProps({ members: Object, groups: Object });
-console.log(data);
 </script>
 
 <template>
     <Head title="Membership Management" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="p-4">
-            <Tabs default-value="membership_management">
+            <Tabs default-value="membership">
                 <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.key" :value="tab.key"> {{ tab.label }} </TabsTrigger>
+                    <TabsTrigger value="membership"> Membership Management </TabsTrigger>
+                    <TabsTrigger value="groups"> Groups Management </TabsTrigger>
+                    <TabsTrigger value="families"> Families Management </TabsTrigger>
                 </TabsList>
-                <TabsContent value="members">
+                <TabsContent value="membership">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
                         <Members :members="data?.members" />
                     </div>
-                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Groups'">
-                        <Groups />
-                    </div>
-                    <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2" v-if="tab.component == 'Families'">
-                        <Families />
-                    </div>
                 </TabsContent>
-                <!-- <TabsContent value="groups">
+                <TabsContent value="groups">
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
                         <Groups :groups="data?.groups" />
                     </div>
@@ -46,7 +41,7 @@ console.log(data);
                     <div class="border-[hsl(0 0% 63.9%)] rounded-lg border-2">
                         <Families />
                     </div>
-                </TabsContent> -->
+                </TabsContent>
             </Tabs>
         </div>
     </AppLayout>

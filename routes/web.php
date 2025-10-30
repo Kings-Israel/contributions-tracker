@@ -39,11 +39,7 @@ Route::middleware('auth')->group(function () {
     })->name('events');
 
     // Members Management
-<<<<<<< HEAD
-    Route::get('/memebers', [MemberController::class, 'index'])->name('members.index');
-=======
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
->>>>>>> 52cf3deb62b616a4a91aea922bfb0478baa90b84
     Route::post('/members/store', [MemberController::class, 'store'])->name('members.store');
 
     // Groups Management

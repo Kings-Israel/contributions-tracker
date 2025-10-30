@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { toTitleCase } from '@/lib/utils';
 import Pagination from '@/Shared/Pagination.vue';
 import { useForm } from '@inertiajs/vue3';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -40,10 +42,6 @@ const addUser = () => {
 const { members } = defineProps({ members: Object });
 
 const closeSheetBtn = ref();
-
-const members = defineProps({ members: Object });
-
-console.log(members);
 </script>
 
 <template>
@@ -199,6 +197,36 @@ console.log(members);
                                 <DialogHeader>
                                     <DialogTitle>Memer Details</DialogTitle>
                                 </DialogHeader>
+                                <div class="items-center gap-4">
+                                    <Label for="name" class="text-right"> Name </Label>
+                                    <span>
+                                        {{ member?.name }}
+                                    </span>
+                                </div>
+                                <div class="items-center gap-4">
+                                    <Label for="email" class="text-right"> Email </Label>
+                                    <span>
+                                        {{ member?.email }}
+                                    </span>
+                                </div>
+                                <div class="items-center gap-4">
+                                    <Label for="phone_number" class="text-right"> Phone Number </Label>
+                                    <span>
+                                        {{ member?.phone_number }}
+                                    </span>
+                                </div>
+                                <div class="items-center gap-4">
+                                    <Label for="age" class="text-right"> Age </Label>
+                                    <span>
+                                        {{ member?.age }}
+                                    </span>
+                                </div>
+                                <div class="items-center gap-4">
+                                    <Label for="gender" class="text-right"> Gender </Label>
+                                    <span>
+                                        {{ toTitleCase(member?.gender) }}
+                                    </span>
+                                </div>
                             </DialogContent>
                         </Dialog>
                     </TableCell>
