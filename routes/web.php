@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminLogController;
 use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
@@ -59,6 +60,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [FamilyController::class, 'store'])->name('store');
 
         Route::post('/member/add', [FamilyController::class, 'addMemberToFamily'])->name('member.add');
+    });
+
+    // Event Management
+    Route::group(['prefix' => '/events', 'as' => 'events.'], function () {
+        Route::get('/', [EventController::class, 'index'])->name('index');
+        Route::post('/store', [EventController::class, 'store'])->name('store');
+        Route::post('/update', [EventController::class, 'update'])->name('update');
     });
 
     // Logs

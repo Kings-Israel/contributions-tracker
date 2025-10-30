@@ -37,8 +37,6 @@ class FamilyController extends Controller
             'family_id' => ['required']
         ]);
 
-        info($validated);
-
         FamilyMember::firstOrCreate($validated);
 
         return redirect()->route('members.index');
