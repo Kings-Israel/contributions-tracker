@@ -27,4 +27,14 @@ class Member extends Model
     {
         return $this->belongsToMany(Group::class, 'group_members', 'member_id', 'group_id');
     }
+
+    /**
+     * The families that belong to the Member
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function families(): BelongsToMany
+    {
+        return $this->belongsToMany(Family::class, 'family_members', 'member_id', 'family_id');
+    }
 }

@@ -1,17 +1,42 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Form } from '@/components/ui/form';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Table, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Sheet, SheetClose, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Pagination from '@/Shared/Pagination.vue';
+import { useForm } from '@inertiajs/vue3';
+import { toTypedSchema } from '@vee-validate/zod';
+import { LoaderCircle } from 'lucide-vue-next';
+import moment from 'moment';
 import { ref } from 'vue';
+import * as z from 'zod';
+
+const formSchema = toTypedSchema(
+    z.object({
+        name: z.string().min(2).max(100),
+    }),
+);
+
+const form = useForm({
+    name: '',
+});
+
+const storeFamily = () => {
+    form.post('/families/store');
+};
+
 const closeSheetBtn = ref();
+
+const { families } = defineProps({ families: Object });
 </script>
 
 <template>
     <div class="mx-1 lg:flex lg:justify-between">
         <div class="hidden md:block"></div>
         <div class="mt-1 flex gap-1">
-            <Form action="/expenses/store" as="" keep-values>
+            <Form action="/families/store" as="" :validation-schema="formSchema">
                 <Sheet>
                     <SheetTrigger as-child>
                         <Button variant="outline"> Add Family </Button>
@@ -19,86 +44,14 @@ const closeSheetBtn = ref();
                     <SheetContent class="space-y-2">
                         <SheetHeader>
                             <SheetTitle>Add Family</SheetTitle>
-                            <SheetDescription> Enter the new family details below. </SheetDescription>
                         </SheetHeader>
-                        <!-- <form
-                            id="dialogForm"
-                            @submit.prevent="
-                                form.post('/expenses/store', {
-                                    onSuccess: () => form.reset('expense_type', 'amount', 'month', 'payment_reference_id'),
-                                })
-                            "
-                            class="mt-4 space-y-4"
-                        >
-                            <FormField v-slot="{ componentField }" name="expense_type">
+                        <form id="dialogForm" @submit.prevent="storeFamily" class="mt-4 space-y-4">
+                            <FormField v-slot="{ componentField }" name="name">
                                 <FormItem>
-                                    <FormLabel>Expense Type/Description</FormLabel>
+                                    <FormLabel>Family Name</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            type="text"
-                                            v-model="form.expense_type"
-                                            placeholder="Enter the type of expense or a description"
-                                            v-bind="componentField"
-                                        />
+                                        <Input type="text" v-model="form.name" placeholder="Enter the family's name" v-bind="componentField" />
                                     </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-
-                            <FormField v-slot="{ componentField }" name="amount">
-                                <FormItem>
-                                    <FormLabel>Amount</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" min="1" v-model="form.amount" placeholder="Enter the amount" v-bind="componentField" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-
-                            <FormField v-slot="{ componentField }" name="date">
-                                <FormItem>
-                                    <FormLabel>Month</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="date"
-                                            v-model="form.month"
-                                            placeholder="Select the date of the expense"
-                                            v-bind="componentField"
-                                        />
-                                    </FormControl>
-                                    <FormDescription> Please select the date of the expense. </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-
-                            <FormField v-slot="{ componentField }" name="reference_id">
-                                <FormItem>
-                                    <FormLabel>Expense Payment Receipt</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="text"
-                                            v-model="form.payment_reference_id"
-                                            placeholder="Enter receipt of payment"
-                                            v-bind="componentField"
-                                        />
-                                    </FormControl>
-                                    <FormDescription> Enter payment of receipt if available. </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-
-                            <FormField v-slot="{ componentField }" name="attachment">
-                                <FormItem>
-                                    <FormLabel>Attachment</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="file"
-                                            @input="form.attachment = $event.target.files[0]"
-                                            placeholder="Upload Attachment"
-                                            v-bind="componentField"
-                                        />
-                                    </FormControl>
-                                    <FormDescription> Upload any relevant attachment for the expense. </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             </FormField>
@@ -108,14 +61,14 @@ const closeSheetBtn = ref();
                             <div class="flex flex-col">
                                 <Button type="submit" form="dialogForm" :disabled="form.processing">
                                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                                    Add Expense
+                                    Add Family
                                 </Button>
                                 <Progress v-if="form.progress" :model-value="form.progress.percentage" />
                                 <div v-if="form.wasSuccessful" class="ml-4 flex items-center">
-                                    <p class="text-sm text-green-600">Expense added successfully!</p>
+                                    <p class="text-sm text-green-600">Family added successfully!</p>
                                 </div>
                             </div>
-                        </SheetFooter> -->
+                        </SheetFooter>
                     </SheetContent>
                 </Sheet>
             </Form>
@@ -123,17 +76,24 @@ const closeSheetBtn = ref();
     </div>
     <div class="py-2">
         <Table>
-            <TableCaption>A list of families.</TableCaption>
+            <TableCaption>A list of Family.</TableCaption>
             <TableHeader>
                 <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
                     <TableHead>Member Count</TableHead>
                     <TableHead>Created At</TableHead>
                     <TableHead>Actions</TableHead>
                 </TableRow>
             </TableHeader>
+            <TableBody v-if="families?.data.length > 0">
+                <TableRow v-for="family in families?.data" :key="family.id">
+                    <TableCell>{{ family?.name }}</TableCell>
+                    <TableCell>{{ family?.members_count }}</TableCell>
+                    <TableCell>{{ moment(family.created_at).format('DD MMM YYYY') }}</TableCell>
+                    <TableCell>View</TableCell>
+                </TableRow>
+            </TableBody>
         </Table>
-        <!-- <pagination :links="expenses.expenses.links" /> -->
+        <pagination :links="families?.links" />
     </div>
 </template>

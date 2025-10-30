@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminLogController;
 use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\MemberController;
@@ -50,6 +51,15 @@ Route::middleware('auth')->group(function () {
 
     // Group Member Management
     Route::post('/member/group/add', [GroupController::class, 'addMemberToGroup'])->name('member.group.add');
+
+    // Family Management
+    Route::group(['prefix' => '/families', 'as' => 'families.'], function () {
+        Route::get('/', [FamilyController::class, 'index'])->name('index');
+
+        Route::post('/store', [FamilyController::class, 'store'])->name('store');
+
+        Route::post('/member/add', [FamilyController::class, 'addMemberToFamily'])->name('member.add');
+    });
 
     // Logs
     Route::get('/logs', function () {

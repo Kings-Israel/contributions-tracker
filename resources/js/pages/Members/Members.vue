@@ -33,6 +33,12 @@ const addToGroupSchema = toTypedSchema(
     }),
 );
 
+const addToFamilySchema = toTypedSchema(
+    z.object({
+        family_id: z.number(),
+    }),
+);
+
 const form = useForm({
     name: '',
     email: '',
@@ -46,11 +52,16 @@ const addToGroupForm = useForm({
     group_id: 0,
 });
 
+const addToFamilyForm = useForm({
+    member_id: 0,
+    family_id: 0,
+});
+
 const addUser = () => {
     addToGroupForm.post('/members/store');
 };
 
-const { members, groups } = defineProps({ members: Object, groups: Object });
+const { members, groups, families } = defineProps({ members: Object, groups: Object, families: Object });
 
 const closeSheetBtn = ref();
 
@@ -59,13 +70,19 @@ const addToGroup = (memberId: number) => {
 
     addToGroupForm.post('/member/group/add');
 };
+
+const addToFamily = (memberId: number) => {
+    addToFamilyForm.member_id = memberId;
+
+    addToFamilyForm.post('/families/member/add');
+};
 </script>
 
 <template>
     <div class="mx-1 lg:flex lg:justify-between">
         <div class="hidden md:block"></div>
         <div class="mt-1 flex gap-1">
-            <Dialog>
+            <!-- <Dialog>
                 <DialogTrigger as-child>
                     <Button variant="outline" class=""> Upload Members </Button>
                 </DialogTrigger>
@@ -73,7 +90,7 @@ const addToGroup = (memberId: number) => {
                     <DialogHeader>
                         <DialogTitle>Upload Members:</DialogTitle>
                     </DialogHeader>
-                    <!-- <form @submit.prevent="uploadForm.post('/expenses/upload')" method="POST" class="">
+                    <form @submit.prevent="uploadForm.post('/expenses/upload')" method="POST" class="">
                         <Input type="file" accept=".xlsx" @input="uploadForm.expenses_file = $event.target.files[0]" />
                         <DialogFooter>
                             <DialogClose as-child>
@@ -84,9 +101,9 @@ const addToGroup = (memberId: number) => {
                             </Button>
                             <Button type="submit" class="bg-red-600 hover:bg-red-700 focus:ring-red-500">Upload</Button>
                         </DialogFooter>
-                    </form> -->
+                    </form>
                 </DialogContent>
-            </Dialog>
+            </Dialog> -->
             <Form action="/members/store" as="" :validation-schema="formSchema">
                 <Sheet>
                     <SheetTrigger as-child>
@@ -252,6 +269,15 @@ const addToGroup = (memberId: number) => {
                                         <span v-else> {{ group.name }}, </span>
                                     </span>
                                 </div>
+                                <div v-if="member.families.length > 0">
+                                    <Label>Families</Label>
+                                    <span v-for="(family, key) in member.families" :key="family.id">
+                                        <span v-if="key === member.families.length - 1">
+                                            {{ family.name }}
+                                        </span>
+                                        <span v-else> {{ family.name }}, </span>
+                                    </span>
+                                </div>
                             </DialogContent>
                         </Dialog>
                         <Form action="/members/group/add" as="" :validation-schema="addToGroupSchema">
@@ -297,6 +323,55 @@ const addToGroup = (memberId: number) => {
                                             <Progress v-if="addToGroupForm.progress" :model-value="addToGroupForm.progress.percentage" />
                                             <div v-if="addToGroupForm.wasSuccessful" class="ml-4 flex items-center">
                                                 <p class="text-sm text-green-600">Member added to group successfully!</p>
+                                            </div>
+                                        </div>
+                                    </SheetFooter>
+                                </SheetContent>
+                            </Sheet>
+                        </Form>
+                        <Form action="/families/member/add" as="" :validation-schema="addToFamilySchema">
+                            <Sheet>
+                                <SheetTrigger as-child>
+                                    <Button variant="outline" @click="addToFamilyForm.member_id = member.id"> Add to Family </Button>
+                                </SheetTrigger>
+                                <SheetContent class="space-y-2">
+                                    <SheetHeader>
+                                        <SheetTitle>Add {{ member?.name }} to family</SheetTitle>
+                                        <SheetDescription> Select the family to add the member to. </SheetDescription>
+                                    </SheetHeader>
+                                    <form id="dialogForm" @submit.prevent="addToFamily(member?.id)" class="mt-4 space-y-4">
+                                        <FormField v-slot="{ componentField }" name="group_id">
+                                            <FormItem>
+                                                <FormLabel>Select Family</FormLabel>
+                                                <FormControl>
+                                                    <Select v-bind="componentField" v-model="addToFamilyForm.family_id">
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a Family" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectLabel>Families</SelectLabel>
+                                                                <SelectItem v-for="family in families" :key="family.id" :value="family.id">
+                                                                    {{ family.name }}
+                                                                </SelectItem>
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        </FormField>
+                                    </form>
+                                    <SheetFooter>
+                                        <SheetClose as-child ref="closeSheetBtn"> </SheetClose>
+                                        <div class="flex flex-col">
+                                            <Button type="submit" form="dialogForm" :disabled="addToFamilyForm.processing">
+                                                <LoaderCircle v-if="addToFamilyForm.processing" class="h-4 w-4 animate-spin" />
+                                                Add Member to Family
+                                            </Button>
+                                            <Progress v-if="addToFamilyForm.progress" :model-value="addToFamilyForm.progress.percentage" />
+                                            <div v-if="addToFamilyForm.wasSuccessful" class="ml-4 flex items-center">
+                                                <p class="text-sm text-green-600">Member added to family successfully!</p>
                                             </div>
                                         </div>
                                     </SheetFooter>

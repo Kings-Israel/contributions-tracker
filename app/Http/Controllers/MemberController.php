@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Family;
 use App\Models\Group;
 use App\Models\Member;
 use Illuminate\Http\Request;
@@ -17,16 +18,22 @@ class MemberController extends Controller
     {
         $per_page = $request->query('per_page') ?? 10;
 
-        $members = Member::with('groups')->latest()->paginate($per_page);
+        $members = Member::with('groups', 'families')->latest()->paginate($per_page);
 
         $groups = Group::withCount('members')->paginate($per_page);
 
+        $families = Family::withCount('members')->paginate($per_page);
+
         $all_groups = Group::all();
+
+        $all_families = Family::all();
 
         return Inertia::render('Members/Index', [
             'members' => $members,
             'groups' => $groups,
+            'families' => $families,
             'all_groups' => $all_groups,
+            'all_families' => $all_families
         ]);
     }
 
