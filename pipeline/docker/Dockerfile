@@ -13,7 +13,11 @@ RUN apk add --no-cache \
     oniguruma-dev \
     mysql-client \
     nginx \
-    supervisor
+    supervisor \
+    autoconf \
+    g++ \
+    make \
+    libtool
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
