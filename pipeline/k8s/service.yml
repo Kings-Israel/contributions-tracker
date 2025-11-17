@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: contributions-tracker-service
+  namespace: contributions-tracker
+spec:
+  selector:
+    app: contributions-tracker
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer

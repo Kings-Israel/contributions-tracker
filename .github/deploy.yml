@@ -1,0 +1,197 @@
+name: Deployment of Contributions Tracker App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: contributions-tracker-cluster
+  ECR_REPOSITORY: contributions-tracker
+
+jobs:
+  deploy-infrastructure:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      cluster-name: ${{ steps.deploy-stack.outputs.cluster-name }}
+      db-endpoint: ${{ steps.deploy-stack.outputs.db-endpoint }}
+      redis-endpoint: ${{ steps.deploy-stack.outputs.redis-endpoint }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Deploy CloudFormation stack
+      id: deploy-stack
+      run: |
+        aws cloudformation deploy \
+          --template-file infrastructure/cloudformation-stack.yml \
+          --stack-name contributions-tracker-infrastructure \
+          --capabilities CAPABILITY_IAM \
+          --parameter-overrides \
+            ClusterName=${{ env.CLUSTER_NAME }} \
+          --region ${{ env.AWS_REGION }}
+
+        # Get outputs
+        CLUSTER_NAME=$(aws cloudformation describe-stacks \
+          --stack-name contributions-tracker-infrastructure \
+          --query 'Stacks,[object Object],Outputs[?OutputKey==`ClusterName`].OutputValue' \
+          --output text)
+
+        DB_ENDPOINT=$(aws cloudformation describe-stacks \
+          --stack-name contributions-tracker-infrastructure \
+          --query 'Stacks,[object Object],Outputs[?OutputKey==`DatabaseEndpoint`].OutputValue' \
+          --output text)
+
+        REDIS_ENDPOINT=$(aws cloudformation describe-stacks \
+          --stack-name contributions-tracker-infrastructure \
+          --query 'Stacks,[object Object],Outputs[?OutputKey==`RedisEndpoint`].OutputValue' \
+          --output text)
+
+        echo "cluster-name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+        echo "db-endpoint=$DB_ENDPOINT" >> $GITHUB_OUTPUT
+        echo "redis-endpoint=$REDIS_ENDPOINT" >> $GITHUB_OUTPUT
+
+  build-and-deploy:
+    needs: deploy-infrastructure
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Create ECR repository if it doesn't exist
+      run: |
+        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \
+        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ needs.deploy-infrastructure.outputs.cluster-name }}
+
+    - name: Install AWS Load Balancer Controller
+      run: |
+        # Install AWS Load Balancer Controller
+        kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller/crds?ref=master"
+
+        # Create service account for AWS Load Balancer Controller
+        eksctl create iamserviceaccount \
+          --cluster=${{ needs.deploy-infrastructure.outputs.cluster-name }} \
+          --namespace=kube-system \
+          --name=aws-load-balancer-controller \
+          --role-name AmazonEKSLoadBalancerControllerRole \
+          --attach-policy-arn=arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess \
+          --approve || true
+
+    - name: Install Secrets Store CSI Driver
+      run: |
+        helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+        helm repo update
+        helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system || true
+
+        # Install AWS provider
+        kubectl apply -f https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml
+
+    - name: Create Kubernetes secrets from AWS Secrets Manager
+      env:
+        AWS_ACCOUNT_ID: ${{ steps.login-ecr.outputs.account }}
+      run: |
+        # Get secrets from AWS Secrets Manager
+        DB_SECRET=$(aws secretsmanager get-secret-value --secret-id ${{ env.CLUSTER_NAME }}/database --query SecretString --output text)
+        APP_SECRET=$(aws secretsmanager get-secret-value --secret-id ${{ env.CLUSTER_NAME }}/app --query SecretString --output text)
+
+        # Extract database password
+        DB_PASSWORD=$(echo $DB_SECRET | jq -r .password)
+
+        # Create namespace
+        kubectl apply -f k8s/namespace.yml
+
+        # Create database secret
+        kubectl create secret generic db-secrets \
+          --from-literal=password="$DB_PASSWORD" \
+          --namespace=contributions-tracker \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Create app secrets
+        echo $APP_SECRET | jq -r 'to_entries|map("--from-literal=\(.key)=\(.value|tostring)")|.[]' | xargs \
+        kubectl create secret generic app-secrets \
+          --namespace=contributions-tracker \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy to EKS
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+        AWS_ACCOUNT_ID: ${{ steps.login-ecr.outputs.account }}
+      run: |
+        # Substitute environment variables in Kubernetes manifests
+        envsubst < k8s/serviceaccount.yml | kubectl apply -f -
+        envsubst < k8s/deployment.yml | kubectl apply -f -
+        kubectl apply -f k8s/service.yml
+
+        # Wait for deployment to be ready
+        kubectl rollout status deployment/contributions-tracker -n contributions-tracker --timeout=300s
+
+        # Get service endpoint
+        kubectl get services -n contributions-tracker
+
+  run-migrations:
+    needs: [deploy-infrastructure, build-and-deploy]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ needs.deploy-infrastructure.outputs.cluster-name }}
+
+    - name: Run Laravel migrations
+      run: |
+        # Run migrations in a pod
+        kubectl run laravel-migrate \
+          --image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
+          --namespace=contributions-tracker \
+          --restart=Never \
+          --command -- php artisan migrate --force
+
+        # Wait for migration to complete
+        kubectl wait --for=condition=complete --timeout=300s pod/laravel-migrate -n contributions-tracker
+
+        # Clean up migration pod
+        kubectl delete pod laravel-migrate -n contributions-tracker
