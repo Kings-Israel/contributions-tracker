@@ -1,46 +1,80 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Contributions Tracker Infrastructure with EKS, RDS, Redis, and Secrets Manager'
+Description: CloudFormation template for VPC with 2 AZs, EKS cluster, managed node group, RDS, ElastiCache Redis, S3, and ECR for Laravel deployment.
 
 Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+    Default: contrinutions-tracker-eks
+
   ClusterName:
+    Description: Name of the EKS cluster
     Type: String
     Default: contrinutions-tracker-cluster
-    Description: Name of the EKS cluster
 
-  NodeGroupName:
+  VpcCIDR:
+    Description: IP range (CIDR notation) for this VPC
     Type: String
-    Default: contrinutions-tracker-nodes
-    Description: Name of the EKS node group
+    Default: 10.192.0.0/16
 
-  DatabaseName:
+  PublicSubnet1CIDR:
+    Description: IP range (CIDR notation) for the public subnet in the first AZ
+    Type: String
+    Default: 10.192.10.0/24
+
+  PublicSubnet2CIDR:
+    Description: IP range (CIDR notation) for the public subnet in the second AZ
+    Type: String
+    Default: 10.192.11.0/24
+
+  PrivateSubnet1CIDR:
+    Description: IP range (CIDR notation) for the private subnet in the first AZ
+    Type: String
+    Default: 10.192.20.0/24
+
+  PrivateSubnet2CIDR:
+    Description: IP range (CIDR notation) for the private subnet in the second AZ
+    Type: String
+    Default: 10.192.21.0/24
+
+  RDSDBName:
+    Description: Name of the RDS database
     Type: String
     Default: contributionstracker
-    Description: RDS database name
 
-  DatabaseUsername:
+  RDSMasterUsername:
+    Description: Master username for the RDS instance
     Type: String
     Default: admin
-    Description: RDS master username
+
+  RDSMasterPassword:
+    Description: Master password for the RDS instance
+    Type: String
+    Default: SecurePassword123
+    NoEcho: true
+
+  S3BucketName:
+    Description: Name of the S3 bucket for storage
+    Type: String
+    Default: contributions-eks-storage
 
 Resources:
-  # VPC Configuration
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
+      CidrBlock: !Ref VpcCIDR
       EnableDnsSupport: true
+      EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-vpc
+          Value: !Ref EnvironmentName
 
-  # Internet Gateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-igw
+          Value: !Ref EnvironmentName
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -48,60 +82,99 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
 
-  # Public Subnets
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: !Ref PublicSubnet1CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-public-subnet-1
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+        - Key: kubernetes.io/cluster/${ClusterName}
+          Value: shared
+        - Key: kubernetes.io/role/elb
+          Value: 1
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: !Ref PublicSubnet2CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-public-subnet-2
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+        - Key: kubernetes.io/cluster/${ClusterName}
+          Value: shared
+        - Key: kubernetes.io/role/elb
+          Value: 1
 
-  # Private Subnets
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-private-subnet-1
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+        - Key: kubernetes.io/cluster/${ClusterName}
+          Value: shared
+        - Key: kubernetes.io/role/internal-elb
+          Value: 1
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: 10.0.4.0/24
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-private-subnet-2
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+        - Key: kubernetes.io/cluster/${ClusterName}
+          Value: shared
+        - Key: kubernetes.io/role/internal-elb
+          Value: 1
 
-  # Route Tables
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-public-routes
+          Value: !Sub ${EnvironmentName} Public Routes
 
-  PublicRoute:
+  DefaultPublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
     Properties:
@@ -121,50 +194,148 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet2
 
-  # Security Groups
-  EKSSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
     Properties:
-      GroupDescription: Security group for EKS cluster
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-eks-sg
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
 
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for RDS
+      GroupDescription: Security group for RDS instance
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
-          SourceSecurityGroupId: !Ref EKSSecurityGroup
+          CidrIp: !Ref VpcCIDR
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-rds-sg
+          Value: !Sub ${EnvironmentName}-rds-sg
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS instance
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-rds-subnet-group
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: '8.0'
+      AllocatedStorage: 20
+      DBName: !Ref RDSDBName
+      MasterUsername: !Ref RDSMasterUsername
+      MasterUserPassword: !Ref RDSMasterPassword
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      MultiAZ: true
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-rds
 
   RedisSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Redis
+      GroupDescription: Security group for ElastiCache Redis
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          SourceSecurityGroupId: !Ref EKSSecurityGroup
+          CidrIp: !Ref VpcCIDR
       Tags:
         - Key: Name
-          Value: !Sub ${ClusterName}-redis-sg
+          Value: !Sub ${EnvironmentName}-redis-sg
 
-  # EKS Cluster Role
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for ElastiCache Redis
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      CacheSubnetGroupName: !Sub ${EnvironmentName}-redis-subnet-group
+
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      Engine: redis
+      EngineVersion: '7.0'
+      CacheNodeType: cache.t3.micro
+      NumCacheNodes: 1
+      ClusterName: !Sub ${EnvironmentName}-redis
+      VpcSecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-redis
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-storage
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${EnvironmentName}-laravel
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ecr
+
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -173,15 +344,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - eks.amazonaws.com
-            Action:
-              - sts:AssumeRole
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
 
-  # EKS Node Group Role
-  EKSNodeGroupRole:
+  EKSNodeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -189,166 +357,71 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - sts:AssumeRole
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-  # EKS Cluster
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
       Name: !Ref ClusterName
-      Version: '1.28'
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
-        SecurityGroupIds:
-          - !Ref EKSSecurityGroup
         SubnetIds:
           - !Ref PublicSubnet1
           - !Ref PublicSubnet2
           - !Ref PrivateSubnet1
           - !Ref PrivateSubnet2
 
-  # EKS Node Group
   EKSNodeGroup:
     Type: AWS::EKS::Nodegroup
-    DependsOn: EKSCluster
     Properties:
-      ClusterName: !Ref ClusterName
-      NodegroupName: !Ref NodeGroupName
-      NodeRole: !GetAtt EKSNodeGroupRole.Arn
-      InstanceTypes:
-        - t3.medium
+      ClusterName: !Ref EKSCluster
+      NodeRole: !GetAtt EKSNodeRole.Arn
       ScalingConfig:
-        MinSize: 2
-        MaxSize: 4
         DesiredSize: 2
+        MaxSize: 3
+        MinSize: 2
       Subnets:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
-
-  # RDS Subnet Group
-  RDSSubnetGroup:
-    Type: AWS::RDS::DBSubnetGroup
-    Properties:
-      DBSubnetGroupDescription: Subnet group for RDS
-      SubnetIds:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: !Sub ${ClusterName}-rds-subnet-group
-
-  # RDS Instance
-  RDSInstance:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      DBInstanceIdentifier: !Sub ${ClusterName}-mysql
-      DBName: !Ref DatabaseName
-      DBInstanceClass: db.t3.micro
-      Engine: mysql
-      EngineVersion: '8.0'
-      AllocatedStorage: 20
-      MasterUsername: !Ref DatabaseUsername
-      ManageMasterUserPassword: true
-      MasterUserSecret:
-        SecretArn: !Ref DatabaseSecret
-      VPCSecurityGroups:
-        - !Ref RDSSecurityGroup
-      DBSubnetGroupName: !Ref RDSSubnetGroup
-      BackupRetentionPeriod: 7
-      MultiAZ: false
-      PubliclyAccessible: false
-
-  # Redis Subnet Group
-  RedisSubnetGroup:
-    Type: AWS::ElastiCache::SubnetGroup
-    Properties:
-      Description: Subnet group for Redis
-      SubnetIds:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
-
-  # Redis Cluster
-  RedisCluster:
-    Type: AWS::ElastiCache::CacheCluster
-    Properties:
-      Engine: redis
-      CacheNodeType: cache.t3.micro
-      NumCacheNodes: 1
-      VpcSecurityGroupIds:
-        - !Ref RedisSecurityGroup
-      CacheSubnetGroupName: !Ref RedisSubnetGroup
-      ClusterName: !Sub ${ClusterName}-redis
-
-  # Secrets Manager
-  DatabaseSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub ${ClusterName}/database
-      Description: Database credentials
-      GenerateSecretString:
-        SecretStringTemplate: !Sub '{"username": "${DatabaseUsername}"}'
-        GenerateStringKey: password
-        PasswordLength: 32
-        ExcludeCharacters: '"@/\'
-
-  AppSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub ${ClusterName}/app
-      Description: Application environment variables
-      SecretString: !Sub |
-        {
-          "APP_NAME": "Contributions Tracker",
-          "APP_ENV": "production",
-          "APP_DEBUG": "false",
-          "APP_URL": "https://contributions.kingsisrael.com",
-          "DB_CONNECTION": "mysql",
-          "DB_HOST": "${RDSInstance.Endpoint.Address}",
-          "DB_PORT": "3306",
-          "DB_DATABASE": "${DatabaseName}",
-          "DB_USERNAME": "${DatabaseUsername}",
-          "REDIS_HOST": "${RedisCluster.RedisEndpoint.Address}",
-          "REDIS_PORT": "6379",
-          "CACHE_DRIVER": "redis",
-          "SESSION_DRIVER": "redis",
-          "QUEUE_CONNECTION": "redis"
-        }
+      InstanceTypes:
+        - t3.medium
 
 Outputs:
   ClusterName:
-    Description: EKS Cluster Name
+    Description: The name of the EKS cluster
     Value: !Ref EKSCluster
-    Export:
-      Name: !Sub ${AWS::StackName}-ClusterName
 
-  DatabaseEndpoint:
-    Description: RDS Database Endpoint
+  VpcId:
+    Description: The ID of the VPC
+    Value: !Ref VPC
+
+  PrivateSubnetIds:
+    Description: List of private subnet IDs
+    Value: !Join [',', [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+
+  PublicSubnetIds:
+    Description: List of public subnet IDs
+    Value: !Join [',', [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+
+  RDSEndpoint:
+    Description: Endpoint of the RDS instance
     Value: !GetAtt RDSInstance.Endpoint.Address
-    Export:
-      Name: !Sub ${AWS::StackName}-DatabaseEndpoint
 
   RedisEndpoint:
-    Description: Redis Endpoint
+    Description: Endpoint of the Redis cluster
     Value: !GetAtt RedisCluster.RedisEndpoint.Address
-    Export:
-      Name: !Sub ${AWS::StackName}-RedisEndpoint
 
-  DatabaseSecretArn:
-    Description: Database Secret ARN
-    Value: !Ref DatabaseSecret
-    Export:
-      Name: !Sub ${AWS::StackName}-DatabaseSecretArn
+  S3BucketName:
+    Description: Name of the S3 bucket
+    Value: !Ref S3Bucket
 
-  AppSecretArn:
-    Description: App Secret ARN
-    Value: !Ref AppSecret
-    Export:
-      Name: !Sub ${AWS::StackName}-AppSecretArn
+  ECRRepositoryUri:
+    Description: URI of the ECR repository
+    Value: !GetAtt ECRRepository.RepositoryUri

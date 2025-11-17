@@ -1,38 +1,43 @@
 #!/bin/bash
 
-set -e
+set -e  # Exit on error
 
-# Configuration
-STACK_NAME="contributions-tracker-infrastructure"
-CLUSTER_NAME="contributions-tracker-cluster"
-AWS_REGION="us-east-1"
+STACK_NAME="contributions-tracker-stack"
 
-echo "🚀 Starting deployment process..."
-
-# Deploy infrastructure
-echo "📦 Deploying CloudFormation stack..."
+# Create or update the CloudFormation stack
 aws cloudformation deploy \
-    --template-file stack.yml \
-    --stack-name $STACK_NAME \
-    --capabilities CAPABILITY_IAM \
-    --parameter-overrides ClusterName=$CLUSTER_NAME \
-    --region $AWS_REGION
+  --stack-name $STACK_NAME \
+  --template-file stack.yml \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset
 
+# Wait for the stack to be ready
 aws cloudformation wait stack-exists --stack-name $STACK_NAME
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME || aws cloudformation wait stack-update-complete --stack-name $STACK_NAME
 
-echo "✅ Infrastructure deployed successfully!"
+# Get the EKS cluster name, RDS endpoint, Redis endpoint, and S3 bucket name from outputs
+CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ClusterName'].OutputValue" --output text)
+RDS_ENDPOINT=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='RDSEndpoint'].OutputValue" --output text)
+REDIS_ENDPOINT=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='RedisEndpoint'].OutputValue" --output text)
+S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='S3BucketName'].OutputValue" --output text)
 
-# Update kubeconfig
-echo "🔧 Updating kubeconfig..."
-aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+# Update kubeconfig to connect to the EKS cluster
+aws eks update-kubeconfig --name $CLUSTER_NAME
 
-# Install necessary controllers
-echo "🎛️ Installing AWS Load Balancer Controller..."
-kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller/crds?ref=master"
+# Update deployment.yaml with the RDS endpoint, Redis endpoint, and S3 bucket name
+sed -i "s/value: !GetAtt RDSInstance.Endpoint.Address/value: $RDS_ENDPOINT/" ../../pipeline/k8s/deployment.yml
+sed -i "s/value: !GetAtt RedisCluster.PrimaryEndPoint.Address/value: $REDIS_ENDPOINT/" ../../pipeline/k8s/deployment.yml
+sed -i "s/value: !Ref S3Bucket/value: $S3_BUCKET/" ../../pipeline/k8s/deployment.yml
 
-# Install Secrets Store CSI Driver
-echo "🔐 Installing Secrets Store CSI Driver..."
-helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-helm repo update
-helm install c
+# Deploy the Kubernetes resources
+kubectl apply -f ../../pipeline/k8s/deployment.yml
+kubectl apply -f ../../pipeline/k8s/service.yml
+
+# Get the Load Balancer URL
+echo "Waiting for Load Balancer to be provisioned..."
+sleep 60  # Wait for ELB to be ready
+LB_URL=$(kubectl get svc contributions-tracker-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "Laravel application is available at: https://$LB_URL"
+echo "RDS Endpoint: $RDS_ENDPOINT"
+echo "Redis Endpoint: $REDIS_ENDPOINT"
+echo "S3 Bucket: $S3_BUCKET"
