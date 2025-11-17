@@ -54,5 +54,5 @@ jobs:
       - name: Deploy to EKS
         run: |
           # Update image in deployment
-          kubectl set image contributions-tracker laravel=$IMAGE_URI -n default
-          kubectl rollout status contributions-tracker -n default
+          kubectl set image deployment/contributions-tracker-eks laravel=$IMAGE_URI -n default
+          kubectl rollout status deployment/contributions-tracker-eks -n default
