@@ -32,6 +32,7 @@ sed -i "s/value: !Ref S3Bucket/value: $S3_BUCKET/" deployment.yml
 sed -i "s|image: !GetAtt ECRRepository.RepositoryUri:latest|image: $ECR_URI:latest|" deployment.yml
 
 # Deploy the Kubernetes resources
+kubectl apply -f namespace.yml
 kubectl apply -f deployment.yml
 kubectl apply -f service.yml
 

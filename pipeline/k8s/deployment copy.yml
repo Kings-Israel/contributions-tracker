@@ -18,7 +18,7 @@ spec:
       serviceAccountName: contributions-tracker-sa
       containers:
         - name: contributions-tracker
-          image: 198277845479.dkr.ecr.us-east-1.amazonaws.com/contributions-tracker-laravel:latest
+          image: !GetAtt ECRRepository.RepositoryUri:latest
           ports:
             - containerPort: 8000
           env:
@@ -27,7 +27,7 @@ spec:
             - name: DB_CONNECTION
               value: mysql
             - name: DB_HOST
-              value: contributions-tracker-stack-rdsinstance-ade4zrolmrep.cameszvyozjq.us-east-1.rds.amazonaws.com
+              value: !GetAtt RDSInstance.Endpoint.Address
             - name: DB_PORT
               value: '3306'
             - name: DB_DATABASE
@@ -39,7 +39,7 @@ spec:
             - name: CACHE_DRIVER
               value: redis
             - name: REDIS_HOST
-              value: contributions-tracker-redis.zeqsb6.0001.use1.cache.amazonaws.com
+              value: !GetAtt RedisCluster.RedisEndpoint.Address
             - name: REDIS_PORT
               value: '6379'
             - name: REDIS_PASSWORD
@@ -47,7 +47,7 @@ spec:
             - name: FILESYSTEM_DISK
               value: s3
             - name: AWS_S3_BUCKET
-              value: contributions-eks-storage
+              value: !Ref S3Bucket
             - name: AWS_DEFAULT_REGION
               value: us-east-1
             - name: AWS_ACCESS_KEY_ID
