@@ -3,13 +3,11 @@ kind: Service
 metadata:
   name: contributions-tracker-service
   namespace: contributions-tracker
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: 'nlb'
 spec:
+  type: ClusterIP
   selector:
     app: contributions-tracker
   ports:
     - protocol: TCP
       port: 80
       targetPort: 8000
-  type: LoadBalancer

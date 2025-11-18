@@ -53,6 +53,12 @@ Parameters:
     Default: SecurePassword123
     NoEcho: true
 
+  AwsAccountId:
+    Description: AWS Account ID
+    Type: String
+    Default: 198277845479
+    NoEcho: true
+
   S3BucketName:
     Description: Name of the S3 bucket for storage
     Type: String
@@ -377,6 +383,13 @@ Resources:
           - !Ref PublicSubnet2
           - !Ref PrivateSubnet1
           - !Ref PrivateSubnet2
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+      # Enable OIDC
+      KubernetesNetworkConfig:
+        IpFamily: ipv4
+    # Add OIDC URL to outputs
+    DependsOn: InternetGatewayAttachment
 
   EKSNodeGroup:
     Type: AWS::EKS::Nodegroup
@@ -392,6 +405,24 @@ Resources:
         - !Ref PrivateSubnet2
       InstanceTypes:
         - t3.medium
+
+  # IAM Role for AWS Load Balancer Controller (IRSA)
+  LoadBalancerControllerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:aws:iam::198277845479:oidc-provider/oidc.eks.${AWS::Region}.amazonaws.com/${EKSCluster}
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                !Sub oidc.eks.${AWS::Region}.amazonaws.com/${EKSCluster}:sub: system:serviceaccount:kube-system:aws-load-balancer-controller
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
 
 Outputs:
   ClusterName:
@@ -425,3 +456,10 @@ Outputs:
   ECRRepositoryUri:
     Description: URI of the ECR repository
     Value: !GetAtt ECRRepository.RepositoryUri
+
+  OIDCProviderUrl:
+    Value: !GetAtt EKSCluster.Identity.Oidc.Issuer
+    Export:
+      Name: !Sub ${AWS::StackName}-OIDC
+  LoadBalancerControllerRoleArn:
+    Value: !GetAtt LoadBalancerControllerRole.Arn
