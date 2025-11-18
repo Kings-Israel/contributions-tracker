@@ -64,6 +64,11 @@ Parameters:
     Type: String
     Default: contributions-eks-storage
 
+  OIDCIssuerPrefix:
+    Description: Static prefix for EKS OIDC issuer URL
+    Type: String
+    Default: oidc.eks
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -419,7 +424,7 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                !Sub oidc.eks.${AWS::Region}.amazonaws.com/${EKSCluster}:sub: system:serviceaccount:kube-system:aws-load-balancer-controller
+                !Sub ${OIDCIssuerPrefix}.${AWS::Region}.amazonaws.com/${EKSCluster}:sub: system:serviceaccount:kube-system:aws-load-balancer-controller
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
