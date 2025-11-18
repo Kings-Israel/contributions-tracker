@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contributions-tracker
+  namespace: contributions-tracker
+  labels:
+    app: contributions-tracker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: contributions-tracker
+  template:
+    metadata:
+      labels:
+        app: contributions-tracker
+    spec:
+      serviceAccountName: contributions-tracker-sa
+      containers:
+        - name: contributions-tracker
+          image: 198277845479.dkr.ecr.us-east-1.amazonaws.com/contributions-tracker-laravel:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: production
+            - name: DB_CONNECTION
+              value: mysql
+            - name: DB_HOST
+              value: contributions-tracker-stack-rdsinstance-ade4zrolmrep.cameszvyozjq.us-east-1.rds.amazonaws.com
+            - name: DB_PORT
+              value: '3306'
+            - name: DB_DATABASE
+              value: contributionstracker
+            - name: DB_USERNAME
+              value: admin
+            - name: DB_PASSWORD
+              value: SecurePassword123 # Use Kubernetes Secrets for production
+            - name: CACHE_DRIVER
+              value: redis
+            - name: REDIS_HOST
+              value: contributions-tracker-redis.zeqsb6.0001.use1.cache.amazonaws.com
+            - name: REDIS_PORT
+              value: '6379'
+            - name: REDIS_PASSWORD
+              value: '' # Update if Redis auth is enabled
+            - name: FILESYSTEM_DISK
+              value: s3
+            - name: AWS_S3_BUCKET
+              value: contributions-eks-storage
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
