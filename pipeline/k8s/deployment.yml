@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: contributions-tracker
-  namespace: contributions-tracker-eks
+  namespace: contributions-tracker
   labels:
     app: contributions-tracker
 spec:
@@ -18,101 +18,39 @@ spec:
       serviceAccountName: contributions-tracker-sa
       containers:
         - name: contributions-tracker
-          image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+          image: 198277845479.dkr.ecr.us-east-1.amazonaws.com/contributions-tracker-laravel:latest
           ports:
             - containerPort: 8000
           env:
-            - name: APP_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: APP_NAME
             - name: APP_ENV
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: APP_ENV
-            - name: APP_DEBUG
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: APP_DEBUG
-            - name: APP_URL
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: APP_URL
-            - name: DB_CONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DB_CONNECTION
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DB_HOST
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DB_PORT
-            - name: DB_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DB_DATABASE
-            - name: DB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: DB_USERNAME
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: db-secrets
-                  key: password
-            - name: REDIS_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: REDIS_HOST
-            - name: REDIS_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: REDIS_PORT
-            - name: CACHE_DRIVER
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: CACHE_DRIVER
-            - name: SESSION_DRIVER
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: SESSION_DRIVER
-            - name: QUEUE_CONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: QUEUE_CONNECTION
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          resources:
-            requests:
-              memory: '256Mi'
-              cpu: '250m'
-            limits:
-              memory: '512Mi'
-              cpu: '500m'
+          value: production
+        - name: DB_CONNECTION
+          value: mysql
+        - name: DB_HOST
+          value: contributions-tracker-stack-rdsinstance-nagmguyuwbp6.cameszvyozjq.us-east-1.rds.amazonaws.com
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_DATABASE
+          value: contributionstracker
+        - name: DB_USERNAME
+          value: admin
+        - name: DB_PASSWORD
+          value: SecurePassword123  # Use Kubernetes Secrets for production
+        - name: CACHE_DRIVER
+          value: redis
+        - name: REDIS_HOST
+          value: contributions-tracker-redis.zeqsb6.0001.use1.cache.amazonaws.com
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          value: ""  # Update if Redis auth is enabled
+        - name: FILESYSTEM_DISK
+          value: s3
+        - name: AWS_S3_BUCKET
+          value: contributions-eks-storage
+        - name: AWS_DEFAULT_REGION
+          value: us-east-1
+        - name: AWS_ACCESS_KEY_ID
+          value: AWS_ACCESS_KEY_ID  # Use IAM roles or Kubernetes Secrets
+        - name: AWS_SECRET_ACCESS_KEY
+          value: AWS_SECRET_ACCESS_KEY  # Use IAM roles or Kubernetes Secrets
