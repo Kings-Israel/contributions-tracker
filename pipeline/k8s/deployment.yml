@@ -50,7 +50,7 @@ spec:
               value: contributions-eks-storage
             - name: AWS_DEFAULT_REGION
               value: us-east-1
-            # - name: AWS_ACCESS_KEY_ID
-            #   value: AKIAS4KSH2HT3PZFKJHH # Use IAM roles or Kubernetes Secrets
-            # - name: AWS_SECRET_ACCESS_KEY
-            #   value: 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 # Use IAM roles or Kubernetes Secrets
+            - name: AWS_ACCESS_KEY_ID
+              value: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            - name: AWS_SECRET_ACCESS_KEY
+              value: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
