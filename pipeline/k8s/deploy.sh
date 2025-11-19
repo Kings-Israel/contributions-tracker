@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 
-STACK_NAME="laravel-eks-stack"
+STACK_NAME="contributions-tracker"
+ACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
+AWS_DEFAULT_REGION=$(aws configure get region)
 
 echo "Deploying infrastructure..."
 aws cloudformation deploy \
   --stack-name $STACK_NAME \
-  --template-file template.yaml \
+  --template-file stack.yml \
   --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
   --no-fail-on-empty-changeset
 
@@ -19,7 +21,6 @@ RDS_ENDPOINT=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --que
 REDIS_ENDPOINT=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='RedisEndpoint'].OutputValue" --output text)
 S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='S3BucketName'].OutputValue" --output text)
 ECR_URI=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ECRRepositoryUri'].OutputValue" --output text)
-OIDC_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='OIDCProviderUrl'].OutputValue" --output text)
 LB_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='LoadBalancerControllerRoleArn'].OutputValue" --output text)
 
 echo "Updating kubeconfig..."
@@ -37,8 +38,8 @@ eksctl create iamserviceaccount \
   --cluster=$CLUSTER_NAME \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --role-name LaravelEKSALBControllerRole \
-  --attach-policy-arn=arn:aws:iam::${AWS::AccountId}:policy/AWSLoadBalancerControllerIAMPolicy \
+  --role-name ContributionsTrackerEKSALBControllerRole \
+  --attach-policy-arn=arn:aws:iam::$ACCOUNTID:policy/AWSLoadBalancerControllerIAMPolicy \
   --approve --override-existing-serviceaccounts
 
 # Install via Helm
@@ -51,14 +52,14 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set region=$AWS_DEFAULT_REGION \
-  --set vpcId=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=laravel-eks --query "Vpcs[0].VpcId" --output text)
+  --set vpcId=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=contributions-tracker-eks --query "Vpcs[0].VpcId" --output text)
 
 echo "Waiting for ALB Controller to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/aws-load-balancer-controller -n kube-system
 
 # --- APPLY K8s MANIFESTS ---
 echo "Creating secret..."
-kubectl create secret generic laravel-secrets \
+kubectl create secret generic contributions-tracker-secrets \
   --from-literal=db-password=SecurePassword123 \
   --dry-run=client -o yml | kubectl apply -f -
 
@@ -74,11 +75,11 @@ kubectl apply -f service.yml
 kubectl apply -f ingress.yml
 
 echo "Waiting for Ingress to get an address..."
-sleep 30
-INGRESS_HOST=$(kubectl get ingress laravel-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+sleep 60
+INGRESS_HOST=$(kubectl get ingress contributions-tracker-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 echo ""
-echo "Laravel App URL: http://$INGRESS_HOST"
+echo "App URL: http://$INGRESS_HOST"
 echo ""
 echo "GitHub Secrets:"
 echo "  AWS_ACCESS_KEY_ID"
