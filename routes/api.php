@@ -18,6 +18,12 @@ Route::post('/payment/confirmation', function (Request $request) {
     info($request->all());
 });
 
+Route::post('/stk-push', [PaymentController::class, 'stkPush']);
+
 Route::get('/payment/validation', function (Request $request) {
     info($request->all());
+});
+
+Route::get('/mpesa/credentails', function (Request $request) {
+    return response()->json(\App\Helpers\Mpesa::accessToken());
 });
