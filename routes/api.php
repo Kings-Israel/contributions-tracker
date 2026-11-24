@@ -14,11 +14,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::post('/stk-push', [PaymentController::class, 'stkPush']);
+
 Route::post('/payment/confirmation', function (Request $request) {
     info($request->all());
 });
-
-Route::post('/stk-push', [PaymentController::class, 'stkPush']);
 
 Route::get('/payment/validation', function (Request $request) {
     info($request->all());
